@@ -27,12 +27,18 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              {"glob": "**/*", "input": "/Users/reactome/Reactome/diagram/static", "output": "./assets/"}
             ],
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [
+              "src/scripts/cytoscape.min.js"
+            ],
+            "allowedCommonJsDependencies": [
+              "cytoscape"
+            ]
           },
           "configurations": {
             "production": {
@@ -100,5 +106,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": false
   }
 }
