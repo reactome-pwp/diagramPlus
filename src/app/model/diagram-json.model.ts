@@ -8,6 +8,11 @@ export interface diagramJSON {
 
 }
 
+interface activator {
+  id: number;
+  points: position;
+}
+
 // reactions
 export interface Edges {
   id:number
@@ -16,6 +21,7 @@ export interface Edges {
   outputs: output[];
   position: position;
   renderableClass: string;
+  activators: activator[];
 
 }
 
@@ -52,4 +58,8 @@ export interface compartments {
   id:number;
   componentIds: number[];
   displayName: string;
+  position: position;
+  prop: prop,
+  renderableClass: string;
+
 }
