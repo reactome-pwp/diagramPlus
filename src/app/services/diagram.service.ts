@@ -47,7 +47,7 @@ export class DiagramService {
                 const reactionNodes = data?.edges.map(item => ({
                     data: {
                         id: item.id,
-                        label: item.displayName,
+                       // label: item.displayName,
                         class: "association", // not correct here, it should be reaction
                         inputs:item.inputs,
                         output:item.outputs,
