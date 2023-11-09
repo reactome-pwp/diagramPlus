@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {DiagramService} from "../services/diagram.service";
-import {diagramJSON} from "../model/diagram-json.model";
+import {DiagramJSON} from "../model/diagram-resource.model";
 import * as cytoscape from "cytoscape";
 import {NodeSingular} from "cytoscape";
 import * as sbgnStylesheet from "cytoscape-sbgn-stylesheet";
@@ -62,10 +62,10 @@ export class DiagramComponent implements OnInit {
         this.getData(9752946);
     }
 
-    getData(dbId: number): diagramJSON | any {
+    getData(dbId: number): DiagramJSON | any {
         this.diagramService.getDiagramJSON(dbId).subscribe(data => {
 
-                console.log("****data****");
+                console.log("****cytoscapte data****");
                 console.log(data);
 
                 this.cy = cytoscape({
@@ -82,7 +82,7 @@ export class DiagramComponent implements OnInit {
                 // Define a CSS class for entity nodes, may not be necessary
                 this.cy.style().selector('.entity-node').style({
                     'width': 'data(width)',
-                    'height': 'data( height)',
+                    'height': 'data(height)',
                     'border-width': 1,
                     'text-halign': 'center',
                     'text-valign': 'center',
@@ -94,41 +94,48 @@ export class DiagramComponent implements OnInit {
                 this.cy.nodes(`[class != "compartment"]`).addClass('entity-node')
 
 
-                //todo refactor below
                 let node: NodeSingular | null = null;
-                this.cy.on('click', 'node', (event: cytoscape.EventObject) => {
+
+                const handleNodeClick = (event: cytoscape.EventObject) => {
                     const clickedNode = event.target;
-
                     if (clickedNode.data('class') === 'association') { // it should be reaction
-                        this.addHighlightStyling(this.cy, clickedNode, true);
+                        this.addHighlight(this.cy, clickedNode, true);
 
+                        if (node !== null && node !== clickedNode) {
+                            this.addHighlight(this.cy, node, false);
+                        }
                         node = clickedNode;
                     }
-                });
-                //Event listener for outside click to remove highlighting
-                this.cy.on('click', (event: cytoscape.EventObject) => {
+                }
 
-                    if (node !== null && event.target !== node) {
-                        this.addHighlightStyling(this.cy, node, false);
-                        node = null
+                const handleOutsideClick = (event: cytoscape.EventObject) => {
+                    const clicked = event.target;
+                    if (node !== null && clicked !== node) {
+                        this.addHighlight(this.cy, node, false);
+                        node = null;
                     }
-                });
+                }
 
-                this.cy.on('click', 'edge', (event: cytoscape.EventObject) => {
+                const handleEdgeClick = (event: cytoscape.EventObject) => {
                     const clickedEdge = event.target;
-                    const targetNodeId = clickedEdge.target().id();
+                    const targetNodeId = clickedEdge.data('type') === 'input' ? clickedEdge.target().id() :clickedEdge.source().id();
                     const targetNode = this.cy.nodes(`[id="${targetNodeId}"]`)
 
                     if (targetNode.data('class') === 'association') {
-                        this.addHighlightStyling(this.cy, targetNode, true)
+                        this.addHighlight(this.cy, targetNode, true)
                         node = targetNode
                     }
-                });
+                }
+
+                this.cy.on('click', 'node', handleNodeClick);
+                this.cy.on('click', handleOutsideClick);
+                this.cy.on('click', 'edge', handleEdgeClick)
+
             }
         )
     }
 
-    addHighlightStyling(cy: any, element: any, addClass: boolean) {
+    addHighlight(cy: any, element: any, addClass: boolean) {
         const style = {
             'border-width': '2px',
             'border-color': 'black',
@@ -146,4 +153,5 @@ export class DiagramComponent implements OnInit {
             element.connectedEdges().removeClass('highlighted');
         }
     }
+
 }

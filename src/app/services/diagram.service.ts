@@ -1,8 +1,8 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
-import {diagramJSON} from "../model/diagram-json.model";
+import {DiagramJSON} from "../model/diagram-resource.model";
 import {map, Observable, tap} from "rxjs";
-import { v4 as uuid } from "uuid";
+import {v4 as uuid} from "uuid";
 
 @Injectable({
     providedIn: 'root'
@@ -11,10 +11,11 @@ export class DiagramService {
 
     public elements: any = {};
 
-    constructor(private http: HttpClient) {}
+    constructor(private http: HttpClient) {
+    }
 
     public getDiagramJSON(dbId: number): Observable<any> {
-        return this.http.get<diagramJSON>('assets/R-HSA-' + dbId + '.json').pipe(
+        return this.http.get<DiagramJSON>('assets/R-HSA-' + dbId + '.json').pipe(
             tap((data) => console.log(data)),
             map((data) => {
 
@@ -31,7 +32,7 @@ export class DiagramService {
                 const compartmentNodes = data?.compartments.map(item => ({
                     data: {
                         id: item.id,
-                        parent:Object.entries(compartments).find(([key, value]) => value.includes(item.id))?.[0],
+                        parent: Object.entries(compartments).find(([key, value]) => value.includes(item.id))?.[0],
                         label: item.displayName,
                         width: item.prop.width,
                         height: item.prop.height,
@@ -47,16 +48,29 @@ export class DiagramService {
                 const reactionNodes = data?.edges.map(item => ({
                     data: {
                         id: item.id,
-                       // label: item.displayName,
+                        // label: item.displayName,
                         class: "association", // not correct here, it should be reaction
-                        inputs:item.inputs,
-                        output:item.outputs,
+                        inputs: item.inputs,
+                        output: item.outputs,
                         clonemarker: false,
                         stateVariables: [],
                         unitsOfInformation: []
                     },
-                    position: item.position
+                    position: item.position,
                 }));
+
+                const typeMap = new Map<string, string>([
+                        ['Protein', 'macromolecule'],
+                        ['EntitySet', 'complex'],
+                        ['Complex', 'complex'],
+                        ['Entity', 'complex'],
+                        ['Proteindrug', 'complex'],
+                        ['Chemical', 'complex'],
+                        ['Complexdrug', 'complex'],
+                        ['Proteindrug', 'complex']
+
+                    ]
+                )
 
                 //entity nodes
                 const entityNodes = data?.nodes.map(item => ({
@@ -66,13 +80,13 @@ export class DiagramService {
                             label: item.displayName,
                             height: item.prop.height,
                             width: item.prop.width,
-                            class: item.renderableClass == "EntitySet" || "Protein" ? "complex" : item.renderableClass.toLowerCase(),
+                            class: typeMap.get(item.renderableClass) || item.renderableClass.toLowerCase(),
                             clonemarker: false,
                             stateVariables: [],
                             unitsOfInformation: []
                         },
-                       // position: {x: item.position.x + 0.5 * (item.prop.width), y: item.position.y + 0.5 * (item.prop.height)}
-                         position:item.position
+                        // position: {x: item.position.x + 0.5 * (item.prop.width), y: item.position.y + 0.5 * (item.prop.height)}
+                        position: item.position
                     }
                 ));
 
@@ -81,12 +95,13 @@ export class DiagramService {
                     edge.inputs.map(input => ({
                         data: {
                             id: uuid(),
-                            source: input.id.toString(),
-                            target: edge.id.toString(),
-                            class: "production",
-                            cardinality: 0,
-                            portSource: input.id.toString(),
-                            portTarget: edge.id.toString(),
+                            source: input.id,
+                            target: edge.id,
+                            class: "consumption",
+                            type: 'input',
+                            cardinality: input.stoichiometry,
+                            portSource: input.id,
+                            portTarget: edge.id,
                         }
                     }))
                 )
@@ -108,8 +123,12 @@ export class DiagramService {
                 const nodeOutputEdges = data?.edges?.flatMap(edge =>
                     edge.outputs.map(output => ({
                         data: {
-                            source: edge.id.toString(),
-                            target: output.id.toString()
+                            source: edge.id,
+                            target: output.id,
+                            class: 'production',
+                            type: 'output',
+                            portSource: edge.id,
+                            portTarget: output.id,
                         }
                     }))
                 )
@@ -117,12 +136,13 @@ export class DiagramService {
                 const activatorInputEdges = data.edges?.flatMap(edge =>
                     edge.activators?.map(activator => ({
                         data: {
-                            source: activator.id.toString(),
-                            target: edge.id.toString(),
-                            class: "production",
+                            source: activator.id,
+                            target: edge.id,
+                            class: "stimulation",
+                            type: "input",
                             cardinality: 0,
-                            portSource: activator.id.toString(),
-                            portTarget: edge.id.toString()
+                            portSource: activator.id,
+                            portTarget: edge.id
                         }
                     })) || []
                 )
