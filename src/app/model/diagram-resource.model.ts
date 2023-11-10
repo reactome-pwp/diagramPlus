@@ -13,6 +13,15 @@ interface Activator {
     points: Position;
 }
 
+
+export interface ReactionShip {
+    a: Position;
+    b: Position;
+    centre: Position;
+    type: string;
+
+}
+
 // reactions
 export interface Edges {
     id: number
@@ -22,6 +31,8 @@ export interface Edges {
     position: Position;
     renderableClass: string;
     activators: Activator[];
+    reactionShape: ReactionShip;
+
 
 }
 
@@ -47,6 +58,12 @@ export interface Prop {
     height: number;
 }
 
+interface Connectors {
+    edgeId: number;
+    type: string;
+    stoichiometry: number
+}
+
 // entities
 export interface Nodes {
 
@@ -54,7 +71,8 @@ export interface Nodes {
     displayName: string;
     renderableClass: string;
     position: Position;
-    prop: Prop
+    prop: Prop,
+    connectors: Connectors[]
 }
 
 export interface Compartments {
@@ -68,6 +86,8 @@ export interface Compartments {
 }
 
 export interface Links{
+    id:number
     inputs: Input[];
     outputs: Output[];
+    renderableClass: string;
 }

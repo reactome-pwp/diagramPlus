@@ -57,9 +57,10 @@ export class DiagramComponent implements OnInit {
         },
     ];
 
-
+    //381753
+    //9752946
     ngOnInit() {
-        this.getData(9752946);
+        this.getData(381753);
     }
 
     getData(dbId: number): DiagramJSON | any {
@@ -74,7 +75,7 @@ export class DiagramComponent implements OnInit {
                     elements: data,
                     style: sbgnStylesheet(cytoscape),
                     layout: {
-                        name: 'preset',
+                        name: 'preset'
                     },
                 });
 
@@ -98,7 +99,7 @@ export class DiagramComponent implements OnInit {
 
                 const handleNodeClick = (event: cytoscape.EventObject) => {
                     const clickedNode = event.target;
-                    if (clickedNode.data('class') === 'association') { // it should be reaction
+                    if (clickedNode.data('renderableClass') === 'Reaction') { // it should be reaction
                         this.addHighlight(this.cy, clickedNode, true);
 
                         if (node !== null && node !== clickedNode) {
@@ -121,7 +122,7 @@ export class DiagramComponent implements OnInit {
                     const targetNodeId = clickedEdge.data('type') === 'input' ? clickedEdge.target().id() :clickedEdge.source().id();
                     const targetNode = this.cy.nodes(`[id="${targetNodeId}"]`)
 
-                    if (targetNode.data('class') === 'association') {
+                    if (targetNode.data('renderableClass') === 'Reaction') {
                         this.addHighlight(this.cy, targetNode, true)
                         node = targetNode
                     }
@@ -140,7 +141,8 @@ export class DiagramComponent implements OnInit {
             'border-width': '2px',
             'border-color': 'black',
             'background-color': 'blue',
-            'line-color': 'blue'
+            'line-color': '#073680',
+            'target-arrow-color': '#073680',
         };
 
         cy.style().selector('.highlighted').style(style);

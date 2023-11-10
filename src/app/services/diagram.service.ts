@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
-import {DiagramJSON} from "../model/diagram-resource.model";
+import {DiagramJSON, Edges} from "../model/diagram-resource.model";
 import {map, Observable, tap} from "rxjs";
 import {v4 as uuid} from "uuid";
 
@@ -14,11 +14,42 @@ export class DiagramService {
     constructor(private http: HttpClient) {
     }
 
+    nodeTypeMap = new Map<string, string>([
+            ['Protein', 'macromolecule'],
+            ['EntitySet', 'complex'],
+            ['Complex', 'complex'],
+            ['Compartment', 'compartment'],
+            ['Entity', 'complex'],
+            ['ProteinDrug', 'complex'],
+            ['Chemical', 'complex'],
+            ['ComplexDrug', 'complex'],
+            ['ProteinDrug', 'complex'],
+            ['ProcessNode', 'complex'],
+            ['EntitySetAndEntitySetLink', 'stimulation']
+
+        ]
+    )
+
+    reactionTypeMap = new Map<string, string>([
+            ['BOX', 'process'],
+            ['CIRCLE', 'association'],
+            ['DOUBLE_CIRCLE', 'dissociation'],
+        ]
+    )
+
+    edgeTypeMap = new Map<string, string>([
+            ['INPUT', 'consumption'],
+            ['OUTPUT', 'production'],
+            ['ACTIVATOR', 'stimulation'],
+            ['CATALYST','catalysis'],
+
+        ]
+    )
+
     public getDiagramJSON(dbId: number): Observable<any> {
         return this.http.get<DiagramJSON>('assets/R-HSA-' + dbId + '.json').pipe(
             tap((data) => console.log(data)),
             map((data) => {
-
                 //compartments map  compartment id as key, a list of nodes as value
                 const compartments: { [key: number]: number[] } = {};
                 data.compartments.map(compartment => {
@@ -36,7 +67,7 @@ export class DiagramService {
                         label: item.displayName,
                         width: item.prop.width,
                         height: item.prop.height,
-                        class: item.renderableClass.toLowerCase(),
+                        class: this.nodeTypeMap.get(item.renderableClass) || item.renderableClass.toLowerCase(),
                         clonemarker: false,
                         stateVariables: [],
                         unitsOfInformation: []
@@ -49,28 +80,18 @@ export class DiagramService {
                     data: {
                         id: item.id,
                         // label: item.displayName,
-                        class: "association", // not correct here, it should be reaction
+                        class: this.reactionTypeMap.get(item.reactionShape.type) || item.reactionShape.type.toLowerCase(),
                         inputs: item.inputs,
                         output: item.outputs,
                         clonemarker: false,
                         stateVariables: [],
+                        renderableClass: item.renderableClass,
                         unitsOfInformation: []
                     },
-                    position: item.position,
+                    position: item.reactionShape.centre
+                  //  grabbable: false
                 }));
 
-                const typeMap = new Map<string, string>([
-                        ['Protein', 'macromolecule'],
-                        ['EntitySet', 'complex'],
-                        ['Complex', 'complex'],
-                        ['Entity', 'complex'],
-                        ['Proteindrug', 'complex'],
-                        ['Chemical', 'complex'],
-                        ['Complexdrug', 'complex'],
-                        ['Proteindrug', 'complex']
-
-                    ]
-                )
 
                 //entity nodes
                 const entityNodes = data?.nodes.map(item => ({
@@ -80,76 +101,71 @@ export class DiagramService {
                             label: item.displayName,
                             height: item.prop.height,
                             width: item.prop.width,
-                            class: typeMap.get(item.renderableClass) || item.renderableClass.toLowerCase(),
+                            class: this.nodeTypeMap.get(item.renderableClass) || item.renderableClass.toLowerCase(),
                             clonemarker: false,
                             stateVariables: [],
                             unitsOfInformation: []
                         },
-                        // position: {x: item.position.x + 0.5 * (item.prop.width), y: item.position.y + 0.5 * (item.prop.height)}
-                        position: item.position
+                         position: {x: item.position.x + 0.5 * (item.prop.width), y: item.position.y + 0.5 * (item.prop.height)}
+                       // position: item.position,
+                       // grabbable: false
                     }
                 ));
 
-                // input edges
-                const nodeInputEdges = data?.edges?.flatMap(edge =>
-                    edge.inputs.map(input => ({
-                        data: {
-                            id: uuid(),
-                            source: input.id,
-                            target: edge.id,
-                            class: "consumption",
-                            type: 'input',
-                            cardinality: input.stoichiometry,
-                            portSource: input.id,
-                            portTarget: edge.id,
+                //all in one?
+                const edges = data.nodes.flatMap(node => {
+                    const  inputs: any[]= [];
+                    const  outputs :any[] = [];
+                    node.connectors.forEach(connector => {
+                        if (connector.type !== 'OUTPUT') {
+                            inputs.push({
+                                data: {
+                                    id: uuid(),
+                                    source: node.id,
+                                    target: connector.edgeId,
+                                    class: this.edgeTypeMap.get(connector.type),
+                                    type: 'input',
+                                    cardinality: connector.stoichiometry,
+                                    portSource: node.id,
+                                    portTarget: connector.edgeId,
+                                }
+                            });
                         }
-                    }))
-                )
-
-
-                // const nodeInputEdges = from(data.edges).pipe(
-                //     mergeMap(edge => (
-                //         from(edge.inputs).pipe(
-                //             mergeMap((input) => {
-                //                 const source = input.id.toString();
-                //                 const target = edge.id.toString();
-                //                 return [{ data: { source, target } }];
-                //             })
-                //         )
-                //     ))
-                // )
-
-                //output edges
-                const nodeOutputEdges = data?.edges?.flatMap(edge =>
-                    edge.outputs.map(output => ({
-                        data: {
-                            source: edge.id,
-                            target: output.id,
-                            class: 'production',
-                            type: 'output',
-                            portSource: edge.id,
-                            portTarget: output.id,
+                        if (connector.type === 'OUTPUT') {
+                            outputs.push({
+                                data: {
+                                    id: uuid(),
+                                    source: connector.edgeId,
+                                    target: node.id,
+                                    class: this.edgeTypeMap.get(connector.type),
+                                    type: 'output',
+                                    portSource: connector.edgeId,
+                                    portTarget: node.id,
+                                }
+                            });
                         }
-                    }))
-                )
+                    });
 
-                const activatorInputEdges = data.edges?.flatMap(edge =>
-                    edge.activators?.map(activator => ({
-                        data: {
-                            source: activator.id,
-                            target: edge.id,
-                            class: "stimulation",
-                            type: "input",
-                            cardinality: 0,
-                            portSource: activator.id,
-                            portTarget: edge.id
+                    return [...inputs, ...outputs]
+                });
+
+
+                const linkEdges = data.links?.map(link => ({
+                            data: {
+                                id: link.id,
+                                source: link.inputs[0].id,
+                                target: link.outputs[0].id,
+                                class: link.renderableClass, //EntitySetAndEntitySetLink
+                                portSource: link.inputs[0].id,
+                                portTarget: link.outputs[0].id
+                            }
                         }
-                    })) || []
+                    )
                 )
 
                 return this.elements = {
                     nodes: [...reactionNodes, ...entityNodes, ...compartmentNodes],
-                    edges: [...nodeInputEdges, ...nodeOutputEdges, ...activatorInputEdges]
+                    edges: [...edges ,...linkEdges]
                 };
             }))
     }
