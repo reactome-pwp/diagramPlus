@@ -1,3 +1,5 @@
+
+//todo refactor below to remove duplicated properties
 export interface Diagram {
 
   /**
@@ -25,11 +27,13 @@ export interface Diagram {
    */
   links: Links[];
 
+  shadows: Shadows[];
+
 }
 
 interface Activator {
   id: number;
-  points: Position;
+  position: Position;
 }
 
 
@@ -45,14 +49,12 @@ export interface ReactionShip {
 export interface Edges {
   id: number
   displayName: string;
+  renderableClass: string;
   inputs: Input[];
   outputs: Output[];
   position: Position;
-  renderableClass: string;
   activators: Activator[];
   reactionShape: ReactionShip;
-
-
 }
 
 export interface Input {
@@ -78,6 +80,7 @@ export interface Prop {
 }
 
 interface Connectors {
+  id: number;
   edgeId: number;
   type: string;
   stoichiometry: number
@@ -96,17 +99,26 @@ export interface Nodes {
 
 export interface Compartments {
   id: number;
-  componentIds: number[];
   displayName: string;
+  renderableClass: string;
   position: Position;
   prop: Prop,
-  renderableClass: string;
+  componentIds: number[];
+}
 
+interface Shadows {
+  id: number
+  displayName: string;
+  position: Position;
+  renderableClass: string;
+  schemaClass: string;
+  prop: Prop,
 }
 
 export interface Links {
   id: number
+  renderableClass: string;
   inputs: Input[];
   outputs: Output[];
-  renderableClass: string;
+
 }

@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
-import {Diagram} from "../model/diagram-resource.model";
+import {Diagram} from "../model/diagram.model";
 import {map, Observable, tap} from "rxjs";
 import {v4 as uuid} from "uuid";
 
@@ -26,8 +26,10 @@ export class DiagramService {
             ['ProteinDrug', 'complex'],
             ['ProcessNode', 'complex'],
             ['EntitySetAndEntitySetLink', 'stimulation'],
-            ['EncapsulatedNode', 'complex'] //todo: schema class name is pathway
-
+            //todo: this Encapsulate node is in Nodes and schema class is pathway, it should be rendered as interacting pathway
+            ['EncapsulatedNode', 'complex'],
+            //todo schema class name is pathway but in shadow
+            ['Shadow', 'complex']
 
         ]
     )
@@ -47,7 +49,7 @@ export class DiagramService {
         ]
     )
 
-    public getDiagramJSON(dbId: number): Observable<any> {
+    public getDiagramData(dbId: number): Observable<any> {
         return this.http.get<Diagram>('assets/R-HSA-' + dbId + '.json').pipe(
             tap((data) => console.log(data)),
             map((data) => {
@@ -115,7 +117,27 @@ export class DiagramService {
                     }
                 ));
 
-                //iterate nodes connectors to get all edges information based on the connector type.
+              const shadows = data?.shadows.map(item => ({
+                  data: {
+                    id: item.id,
+                    label: item.displayName,
+                    height: item.prop.height,
+                    width: item.prop.width,
+                    class: this.nodeTypeMap.get(item.renderableClass) || item.renderableClass.toLowerCase(),
+                    clonemarker: false,
+                    stateVariables: [],
+                    unitsOfInformation: [],
+                  },
+                  position: item.position
+                })
+              );
+
+
+               /**
+                * iterate nodes connectors to get all edges information based on the connector type.
+                *
+                * Use uuid to generate a unique identifier
+                */
                 const edges = data.nodes.flatMap(node => {
                     const  inputs: any[]= [];
                     const  outputs :any[] = [];
@@ -167,7 +189,7 @@ export class DiagramService {
                 )
 
                 return this.elements = {
-                    nodes: [...reactionNodes, ...entityNodes, ...compartmentNodes],
+                    nodes: [...reactionNodes, ...entityNodes, ...compartmentNodes, ...shadows],
                     edges: [...edges ,...linkEdges]
                 };
             }))

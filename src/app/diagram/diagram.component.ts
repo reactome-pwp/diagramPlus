@@ -4,7 +4,7 @@ import * as cytoscape from "cytoscape";
 import {NodeSingular} from "cytoscape";
 import * as sbgnStylesheet from "cytoscape-sbgn-stylesheet";
 import { ActivatedRoute } from '@angular/router';
-import {Diagram} from "../model/diagram-resource.model";
+import {Diagram} from "../model/diagram.model";
 
 
 @Component({
@@ -61,15 +61,13 @@ export class DiagramComponent implements OnInit {
         },
     ];
 
-    //381753
-    //9752946
     ngOnInit() {
         const id = Number(this.route.snapshot.paramMap.get('id'));
         this.getData(id);
     }
 
     getData(dbId: number): Diagram | any {
-        this.diagramService.getDiagramJSON(dbId).subscribe(data => {
+        this.diagramService.getDiagramData(dbId).subscribe(data => {
 
                 console.log("****cytoscapte data****");
                 console.log(data);

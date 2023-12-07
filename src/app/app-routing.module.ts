@@ -5,7 +5,7 @@ import {DiagramComponent} from "./diagram/diagram.component";
 
 
 const routes: Routes = [
-  { path: '', redirectTo: '/diagram/8851680', pathMatch: 'full' },
+  { path: '', redirectTo: '/diagram/2404192', pathMatch: 'full' },
   { path: 'diagram/:id', component: DiagramComponent },
 ];
 
