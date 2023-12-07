@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
-import {DiagramJSON, Edges} from "../model/diagram-resource.model";
+import {Diagram} from "../model/diagram-resource.model";
 import {map, Observable, tap} from "rxjs";
 import {v4 as uuid} from "uuid";
 
@@ -25,7 +25,9 @@ export class DiagramService {
             ['ComplexDrug', 'complex'],
             ['ProteinDrug', 'complex'],
             ['ProcessNode', 'complex'],
-            ['EntitySetAndEntitySetLink', 'stimulation']
+            ['EntitySetAndEntitySetLink', 'stimulation'],
+            ['EncapsulatedNode', 'complex'] //todo: schema class name is pathway
+
 
         ]
     )
@@ -42,12 +44,11 @@ export class DiagramService {
             ['OUTPUT', 'production'],
             ['ACTIVATOR', 'stimulation'],
             ['CATALYST','catalysis'],
-
         ]
     )
 
     public getDiagramJSON(dbId: number): Observable<any> {
-        return this.http.get<DiagramJSON>('assets/R-HSA-' + dbId + '.json').pipe(
+        return this.http.get<Diagram>('assets/R-HSA-' + dbId + '.json').pipe(
             tap((data) => console.log(data)),
             map((data) => {
                 //compartments map  compartment id as key, a list of nodes as value
@@ -72,7 +73,8 @@ export class DiagramService {
                         stateVariables: [],
                         unitsOfInformation: []
                     },
-                    position: item.position
+                    position: item.position,
+
                 }));
 
                 //reaction nodes
@@ -88,8 +90,9 @@ export class DiagramService {
                         renderableClass: item.renderableClass,
                         unitsOfInformation: []
                     },
-                    position: item.reactionShape.centre
-                  //  grabbable: false
+                  position: item.reactionShape.centre,
+                  //disable interaction
+                  //grabbable: false
                 }));
 
 
@@ -104,7 +107,7 @@ export class DiagramService {
                             class: this.nodeTypeMap.get(item.renderableClass) || item.renderableClass.toLowerCase(),
                             clonemarker: false,
                             stateVariables: [],
-                            unitsOfInformation: []
+                            unitsOfInformation: [],
                         },
                          position: {x: item.position.x + 0.5 * (item.prop.width), y: item.position.y + 0.5 * (item.prop.height)}
                        // position: item.position,
@@ -112,7 +115,7 @@ export class DiagramService {
                     }
                 ));
 
-                //all in one?
+                //iterate nodes connectors to get all edges information based on the connector type.
                 const edges = data.nodes.flatMap(node => {
                     const  inputs: any[]= [];
                     const  outputs :any[] = [];
@@ -155,7 +158,7 @@ export class DiagramService {
                                 id: link.id,
                                 source: link.inputs[0].id,
                                 target: link.outputs[0].id,
-                                class: link.renderableClass, //EntitySetAndEntitySetLink
+                                class: link.renderableClass, // EntitySetAndEntitySetLink, this should be dotted line
                                 portSource: link.inputs[0].id,
                                 portTarget: link.outputs[0].id
                             }

@@ -1,9 +1,10 @@
 import {Component, OnInit} from '@angular/core';
 import {DiagramService} from "../services/diagram.service";
-import {DiagramJSON} from "../model/diagram-resource.model";
 import * as cytoscape from "cytoscape";
 import {NodeSingular} from "cytoscape";
 import * as sbgnStylesheet from "cytoscape-sbgn-stylesheet";
+import { ActivatedRoute } from '@angular/router';
+import {Diagram} from "../model/diagram-resource.model";
 
 
 @Component({
@@ -18,7 +19,10 @@ export class DiagramComponent implements OnInit {
     edges: any;
     elements: any;
 
-    constructor(private diagramService: DiagramService) {
+    constructor(
+      private diagramService: DiagramService,
+      private route: ActivatedRoute,
+      ) {
     }
 
     public getStyle: cytoscape.Stylesheet[] = [
@@ -60,10 +64,11 @@ export class DiagramComponent implements OnInit {
     //381753
     //9752946
     ngOnInit() {
-        this.getData(381753);
+        const id = Number(this.route.snapshot.paramMap.get('id'));
+        this.getData(id);
     }
 
-    getData(dbId: number): DiagramJSON | any {
+    getData(dbId: number): Diagram | any {
         this.diagramService.getDiagramJSON(dbId).subscribe(data => {
 
                 console.log("****cytoscapte data****");
@@ -71,7 +76,6 @@ export class DiagramComponent implements OnInit {
 
                 this.cy = cytoscape({
                     container: document.getElementById('cy'),
-                    boxSelectionEnabled: false,
                     elements: data,
                     style: sbgnStylesheet(cytoscape),
                     layout: {
@@ -80,7 +84,7 @@ export class DiagramComponent implements OnInit {
                 });
 
 
-                // Define a CSS class for entity nodes, may not be necessary
+                //todo Define a CSS class for entity nodes, may not be necessary when Reactome stylesheet is ready
                 this.cy.style().selector('.entity-node').style({
                     'width': 'data(width)',
                     'height': 'data(height)',
@@ -89,7 +93,7 @@ export class DiagramComponent implements OnInit {
                     'text-valign': 'center',
                     'text-wrap': 'wrap',
                     'text-max-width': 'data(width)',
-                    'font-size': '14px'
+                    'font-size': '14px',
                 })
 
                 this.cy.nodes(`[class != "compartment"]`).addClass('entity-node')
@@ -99,7 +103,7 @@ export class DiagramComponent implements OnInit {
 
                 const handleNodeClick = (event: cytoscape.EventObject) => {
                     const clickedNode = event.target;
-                    if (clickedNode.data('renderableClass') === 'Reaction') { // it should be reaction
+                    if (clickedNode.data('renderableClass') === 'Reaction') {
                         this.addHighlight(this.cy, clickedNode, true);
 
                         if (node !== null && node !== clickedNode) {
