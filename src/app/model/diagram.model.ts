@@ -37,7 +37,7 @@ interface Activator {
 }
 
 
-export interface ReactionShip {
+export interface ReactionShape {
   a: Position;
   b: Position;
   centre: Position;
@@ -54,7 +54,7 @@ export interface Edges {
   outputs: Output[];
   position: Position;
   activators: Activator[];
-  reactionShape: ReactionShip;
+  reactionShape: ReactionShape;
 }
 
 export interface Input {
